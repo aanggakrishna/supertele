@@ -88,15 +88,21 @@ with tabs[3]:
     
     # 1. Add New Channel
     with st.expander("➕ Add New Target Channel"):
-        new_id = st.text_input("Channel ID or @username")
-        new_name = st.text_input("Easy Name (optional)")
+        st.info("""
+        **Format Guide:**
+        - **Channel ID**: Biasanya diawali dengan `-100` (contoh: `-100123456789`). Masukkan lengkap dengan tanda minusnya.
+        - **Username**: Awali dengan `@` (contoh: `@DexScreenerCalls`).
+        """)
+        new_id = st.text_input("Channel ID or @username", placeholder="-100xxxxxxx or @username")
         if st.button("Add Channel"):
             if new_id:
                 try:
-                    ch = TargetChannel(identifier=new_id, name=new_name)
+                    # Clean input
+                    new_id_clean = new_id.strip()
+                    ch = TargetChannel(identifier=new_id_clean, name=None) # Name will be resolved by worker
                     db.add(ch)
                     db.commit()
-                    st.success(f"Added {new_id}!")
+                    st.success(f"Added {new_id_clean}! Menunggu worker mengambil nama channel...")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
@@ -105,12 +111,14 @@ with tabs[3]:
 
     # 2. List & Toggle Channels
     st.write("---")
-    channels = db.query(TargetChannel).all()
+    channels = db.query(TargetChannel).order_by(TargetChannel.created_at.desc()).all()
     if channels:
         for c in channels:
             col1, col2, col3 = st.columns([3, 1, 1])
             with col1:
-                st.write(f"**{c.name or 'Unnamed'}** ({c.identifier})")
+                display_name = c.name if c.name else "⏳ *Fetching name from Telegram...*"
+                st.write(f"**{display_name}**")
+                st.caption(f"ID: `{c.identifier}`")
             with col2:
                 status = "✅ Active" if c.is_active else "❌ Inactive"
                 if st.button(status, key=f"toggle_{c.id}"):

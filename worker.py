@@ -36,6 +36,17 @@ async def refresh_channels(client, db):
             new_list = []
             for c in channels:
                 val = c.identifier
+                
+                # Auto-resolve name if missing
+                if not c.name:
+                    try:
+                        entity = await client.get_entity(int(val) if val.lstrip('-').isdigit() else val)
+                        c.name = getattr(entity, 'title', getattr(entity, 'first_name', 'Unknown'))
+                        db.commit()
+                        print(f"Resolved name for {val}: {c.name}")
+                    except Exception as ex:
+                        print(f"Could not resolve name for {val}: {ex}")
+
                 if val.lstrip('-').isdigit():
                     new_list.append(int(val))
                 else:
@@ -44,9 +55,6 @@ async def refresh_channels(client, db):
             if set(new_list) != set(MONITORED_CHANNELS):
                 print(f"Update detected. Now monitoring {len(new_list)} channels.")
                 MONITORED_CHANNELS = new_list
-                # Update the handler's chats filter
-                # Note: Telethon handlers don't live-update easily, 
-                # but we can filter inside the handler.
         except Exception as e:
             print(f"Error refreshing channels: {e}")
         await asyncio.sleep(60)
