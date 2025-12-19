@@ -136,6 +136,7 @@ async def main():
                 for key, value in parsed_data.items():
                     setattr(token, key, value)
                 
+                token.raw_response = text # Save the full raw text
                 calculate_moonshot_score(token, db)
                 db.commit()
                 print(f"Updated token info and score for {ca}")

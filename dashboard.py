@@ -45,13 +45,33 @@ with tabs[0]:
         st.dataframe(df, use_container_width=True, hide_index=True)
         
         # High Conviction Section
-        gold_tokens = db.query(Token).filter(Token.is_gold == True).all()
+        gold_tokens = db.query(Token).filter(Token.is_gold == True).order_by(Token.created_at.desc()).all()
         if gold_tokens:
             st.success(f"⚡ FOUND {len(gold_tokens)} HIGH CONVICTION (GOLD) TOKENS!")
             for gt in gold_tokens:
                 with st.expander(f"💰 {gt.symbol} | Score: {gt.moonshot_score:.0f} | CA: {gt.contract_address}"):
                     st.write(f"**Notes:** {gt.trader_notes}")
                     st.write(f"**Mentions Intensity:** {gt.mentions_5m} mentions in last 5 mins.")
+                    if gt.raw_response:
+                        st.write("**Raw Rick Bot Data:**")
+                        st.code(gt.raw_response)
+        
+        st.write("---")
+        st.subheader("All Detected Tokens")
+        all_tokens = db.query(Token).order_by(Token.created_at.desc()).limit(20).all()
+        for t in all_tokens:
+            with st.expander(f"{'⭐' if t.is_gold else '•'} {t.symbol or 'Unknown'} | Score: {t.moonshot_score:.0f} | CA: {t.contract_address}"):
+                 col_a, col_b = st.columns(2)
+                 with col_a:
+                     st.write(f"**FDV:** ${t.fdv:,.0f}" if t.fdv else "**FDV:** N/A")
+                     st.write(f"**Liq:** ${t.liquidity:,.0f}" if t.liquidity else "**Liq:** N/A")
+                 with col_b:
+                     st.write(f"**Score:** {t.moonshot_score:.0f}/100")
+                     st.write(f"**Risk:** {t.audit_status or 'Unknown'}")
+                 
+                 if t.raw_response:
+                     st.write("**Full Raw Data:**")
+                     st.text(t.raw_response)
     else:
         st.info("Listening for new tokens on Telegram... Momentum is coming.")
 

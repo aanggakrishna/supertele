@@ -58,6 +58,7 @@ class Token(Base):
     is_gold = Column(Boolean, default=False)
     
     trader_notes = Column(Text)
+    raw_response = Column(Text) # Store full Rick Bot response
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class HolderAnalysis(Base):
