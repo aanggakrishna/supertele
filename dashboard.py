@@ -42,7 +42,7 @@ with tabs[0]:
     st.subheader("Real-time Moonshot Radar (Sorted by Potential)")
     if not df.empty:
         # Style the dataframe (optional)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width='stretch', hide_index=True)
         
         # High Conviction Section
         gold_tokens = db.query(Token).filter(Token.is_gold == True).order_by(Token.created_at.desc()).all()
@@ -99,7 +99,7 @@ with tabs[2]:
             "Sender": m.sender_id,
             "Message": m.text[:100] + "..." if len(m.text) > 100 else m.text
         } for m in msgs])
-        st.dataframe(msg_df, use_container_width=True, hide_index=True)
+        st.dataframe(msg_df, width='stretch', hide_index=True)
     else:
         st.info("No activity detected yet.")
 

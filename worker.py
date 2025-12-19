@@ -119,7 +119,13 @@ async def main():
                 db.commit()
 
                 # Forward to Rick Bot
-                await client.send_message(RICK_BOT_ID, ca)
+                try:
+                    # Resolve entity first to ensure Telethon knows who it is
+                    rick_entity = await client.get_entity(RICK_BOT_ID)
+                    sent_msg = await client.send_message(rick_entity, ca)
+                    print(f"Successfully forwarded CA to Rick Bot (Msg ID: {sent_msg.id})")
+                except Exception as e:
+                    print(f"❌ FAILED to send to Rick Bot: {e}")
 
         # 3. Case: Message from Rick Bot
         else:
@@ -151,4 +157,9 @@ async def main():
     await client.run_until_disconnected()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nStopping worker gracefully...")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
