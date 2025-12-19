@@ -13,6 +13,24 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+class Message(Base):
+    __tablename__ = 'messages'
+    __table_args__ = {'schema': 'bot_schema'}
+    id = Column(Integer, primary_key=True)
+    channel_id = Column(String)
+    sender_id = Column(String)
+    text = Column(Text)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+class TargetChannel(Base):
+    __tablename__ = 'target_channels'
+    __table_args__ = {'schema': 'bot_schema'}
+    id = Column(Integer, primary_key=True)
+    identifier = Column(String, unique=True) # @username or ID
+    name = Column(String)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Token(Base):
     __tablename__ = 'tokens'
     __table_args__ = {'schema': 'bot_schema'}

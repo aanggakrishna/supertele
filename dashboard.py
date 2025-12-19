@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from models import SessionLocal, Token, HolderAnalysis
-from sqlalchemy import func
+from models import SessionLocal, Token, HolderAnalysis, Message, TargetChannel
+from sqlalchemy import func, desc
 import os
 
 st.set_page_config(page_title="Professional Memecoin Terminal", layout="wide")
@@ -36,7 +36,7 @@ def load_data():
 
 df = load_data()
 
-tabs = st.tabs(["🚀 Moonshot Radar", "🔍 Wallet Behavioral Analysis", "🧠 ML & Strategy Insights"])
+tabs = st.tabs(["🚀 Moonshot Radar", "🔍 Wallet Behavioral Analysis", "🔥 Raw Feed", "⚙️ Channel Manager", "🧠 ML & Strategy Insights"])
 
 with tabs[0]:
     st.subheader("Real-time Moonshot Radar (Sorted by Potential)")
@@ -70,7 +70,63 @@ with tabs[1]:
         st.write("No wallet analysis data yet.")
 
 with tabs[2]:
-    st.subheader("ML & Timing Strategy")
+    st.subheader("🔥 Recent Telegram Activity (Live Feed)")
+    msgs = db.query(Message).order_by(desc(Message.timestamp)).limit(50).all()
+    if msgs:
+        msg_df = pd.DataFrame([{
+            "Time": m.timestamp.strftime("%H:%M:%S"),
+            "Channel ID": m.channel_id,
+            "Sender": m.sender_id,
+            "Message": m.text[:100] + "..." if len(m.text) > 100 else m.text
+        } for m in msgs])
+        st.dataframe(msg_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No activity detected yet.")
+
+with tabs[3]:
+    st.subheader("⚙️ Channel Management")
+    
+    # 1. Add New Channel
+    with st.expander("➕ Add New Target Channel"):
+        new_id = st.text_input("Channel ID or @username")
+        new_name = st.text_input("Easy Name (optional)")
+        if st.button("Add Channel"):
+            if new_id:
+                try:
+                    ch = TargetChannel(identifier=new_id, name=new_name)
+                    db.add(ch)
+                    db.commit()
+                    st.success(f"Added {new_id}!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
+            else:
+                st.warning("Identifier required.")
+
+    # 2. List & Toggle Channels
+    st.write("---")
+    channels = db.query(TargetChannel).all()
+    if channels:
+        for c in channels:
+            col1, col2, col3 = st.columns([3, 1, 1])
+            with col1:
+                st.write(f"**{c.name or 'Unnamed'}** ({c.identifier})")
+            with col2:
+                status = "✅ Active" if c.is_active else "❌ Inactive"
+                if st.button(status, key=f"toggle_{c.id}"):
+                    c.is_active = not c.is_active
+                    db.commit()
+                    st.rerun()
+            with col3:
+                if st.button("🗑️ Delete", key=f"del_{c.id}"):
+                    db.delete(c)
+                    db.commit()
+                    st.rerun()
+    else:
+        st.write("No target channels configured.")
+
+with tabs[4]:
+    st.subheader("ML & Strategy Insights")
     st.write("Best entry window (based on history): **14:00 - 18:00 UTC**")
     # Placeholder for a heatmap or chart
     st.info("Segmentasi: Token dengan mention > 3 dalam 5 menit memiliki probabilitas pump 70%.")
